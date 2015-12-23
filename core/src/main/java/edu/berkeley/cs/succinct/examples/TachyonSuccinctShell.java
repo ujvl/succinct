@@ -26,20 +26,21 @@ import java.util.TreeMap;
 
 public class TachyonSuccinctShell {
 
+    private static final String READ_TYPE = "NO_CACHE";
+
     public static void main(String[] args) throws Exception {
 
-        if (args.length != 3) {
+        if (args.length != 2) {
             System.out.println("Parameters: " +
                     "[tachyon-master-location] " +
-                    "[file-path] " +
-                    "[ReadType (CACHE_PROMOTE | CACHE | NO_CACHE)] ");
+                    "[file-path]");
             System.exit(-1);
         }
 
         TachyonURI masterLoc = new TachyonURI(args[0]);
         String readPath = args[1];
-        ReadType rType = ReadType.valueOf(args[2]);
 
+        // setting tachyon conf
         TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
         TachyonConf tachyonConf = ClientContext.getConf();
         tachyonConf.set(Constants.MASTER_HOSTNAME, masterLoc.getHost());
@@ -48,14 +49,15 @@ public class TachyonSuccinctShell {
 
         System.out.println("Master location set to " + masterLoc.getHost() + " at port " + masterLoc.getPort());
 
+        // Read byte buffer from file
+        ReadType rType = ReadType.valueOf(READ_TYPE);
         InStreamOptions readOptions = new InStreamOptions.Builder(ClientContext.getConf()).setReadType(rType).build();
 
         TachyonURI filePath = new TachyonURI(readPath);
         TachyonFile file = tfs.open(filePath);
         ByteBuffer byteBuffer = readBytes(tfs, file, readOptions);
 
-        System.out.println("Created byte buffer from " + readPath);
-
+        // Set up succinct data structures and open succinct shell
         SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer(byteBuffer);
         activateShell(succinctFileBuffer);
     }
