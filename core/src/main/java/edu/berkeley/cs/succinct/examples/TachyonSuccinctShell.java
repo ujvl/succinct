@@ -4,7 +4,6 @@ import edu.berkeley.cs.succinct.buffers.SuccinctFileBuffer;
 import edu.berkeley.cs.succinct.regex.RegExMatch;
 import edu.berkeley.cs.succinct.regex.SuccinctRegEx;
 import edu.berkeley.cs.succinct.regex.parser.RegExParsingException;
-import org.apache.commons.io.IOUtils;
 import tachyon.Constants;
 import tachyon.TachyonURI;
 import tachyon.client.ClientContext;
@@ -27,7 +26,7 @@ public class TachyonSuccinctShell {
 
     private static final String READ_TYPE = "NO_CACHE";
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         if (args.length != 2) {
             System.out.println("Parameters: " +
@@ -37,22 +36,26 @@ public class TachyonSuccinctShell {
         }
 
         setupTFS(args[0]);
-        TachyonURI filePath = new TachyonURI(args[1]);
+        TachyonURI inFileURI = new TachyonURI(args[1]);
 
-        // Read byte buffer from file
         ReadType rType = ReadType.valueOf(READ_TYPE);
         InStreamOptions readOptions = new InStreamOptions.Builder(ClientContext.getConf()).setReadType(rType).build();
 
-        TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
-        TachyonFile file = tfs.open(filePath);
-        ByteBuffer byteBuffer = readBytes(tfs, file, readOptions);
+        try {
 
-        SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer();
-        //SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer(byteBuffer);
-        succinctFileBuffer.readFromStream(new DataInputStream(new ByteArrayInputStream(byteBuffer.array())));
-        System.out.println("Created file buffer!");
+            TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
+            TachyonFile file = tfs.open(inFileURI);
+            ByteBuffer byteBuffer = readBytes(tfs, file, readOptions);
 
-        activateShell(succinctFileBuffer);
+            SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer();
+            succinctFileBuffer.readFromStream(new DataInputStream(new ByteArrayInputStream(byteBuffer.array())));
+
+            activateShell(succinctFileBuffer);
+
+        } catch (TachyonException|IOException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
     }
 
     /**
@@ -66,12 +69,10 @@ public class TachyonSuccinctShell {
      */
     public static ByteBuffer readBytes(TachyonFileSystem tfs, TachyonFile file, InStreamOptions readOps)
             throws IOException, TachyonException {
-
         FileInStream inStream = tfs.getInStream(file, readOps);
         ByteBuffer buf = ByteBuffer.allocate((int) inStream.remaining());
         inStream.read(buf.array());
         buf.order(ByteOrder.nativeOrder());
-
         return buf;
     }
 
