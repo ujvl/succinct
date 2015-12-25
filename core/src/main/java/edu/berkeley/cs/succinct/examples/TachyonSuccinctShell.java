@@ -4,6 +4,7 @@ import edu.berkeley.cs.succinct.buffers.SuccinctFileBuffer;
 import edu.berkeley.cs.succinct.regex.RegExMatch;
 import edu.berkeley.cs.succinct.regex.SuccinctRegEx;
 import edu.berkeley.cs.succinct.regex.parser.RegExParsingException;
+import org.apache.commons.io.IOUtils;
 import tachyon.Constants;
 import tachyon.TachyonURI;
 import tachyon.client.ClientContext;
@@ -15,9 +16,7 @@ import tachyon.client.file.options.InStreamOptions;
 import tachyon.conf.TachyonConf;
 import tachyon.exception.TachyonException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -37,28 +36,22 @@ public class TachyonSuccinctShell {
             System.exit(-1);
         }
 
-        TachyonURI masterLoc = new TachyonURI(args[0]);
-        String readPath = args[1];
-
-        // setting tachyon conf
-        TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
-        TachyonConf tachyonConf = ClientContext.getConf();
-        tachyonConf.set(Constants.MASTER_HOSTNAME, masterLoc.getHost());
-        tachyonConf.set(Constants.MASTER_PORT, Integer.toString(masterLoc.getPort()));
-        ClientContext.reset(tachyonConf);
-
-        System.out.println("Master location set to " + masterLoc.getHost() + " at port " + masterLoc.getPort());
+        setupTFS(args[0]);
+        TachyonURI filePath = new TachyonURI(args[1]);
 
         // Read byte buffer from file
         ReadType rType = ReadType.valueOf(READ_TYPE);
         InStreamOptions readOptions = new InStreamOptions.Builder(ClientContext.getConf()).setReadType(rType).build();
 
-        TachyonURI filePath = new TachyonURI(readPath);
+        TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
         TachyonFile file = tfs.open(filePath);
         ByteBuffer byteBuffer = readBytes(tfs, file, readOptions);
 
-        // Set up succinct data structures and open succinct shell
-        SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer(byteBuffer);
+        SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer();
+        //SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer(byteBuffer);
+        succinctFileBuffer.readFromStream(new DataInputStream(new ByteArrayInputStream(byteBuffer.array())));
+        System.out.println("Created file buffer!");
+
         activateShell(succinctFileBuffer);
     }
 
@@ -80,7 +73,14 @@ public class TachyonSuccinctShell {
         buf.order(ByteOrder.nativeOrder());
 
         return buf;
+    }
 
+    public static void setupTFS(String masterURI) {
+        TachyonURI masterLoc = new TachyonURI(masterURI);
+        TachyonConf tachyonConf = ClientContext.getConf();
+        tachyonConf.set(Constants.MASTER_HOSTNAME, masterLoc.getHost());
+        tachyonConf.set(Constants.MASTER_PORT, Integer.toString(masterLoc.getPort()));
+        ClientContext.reset(tachyonConf);
     }
 
     /**
