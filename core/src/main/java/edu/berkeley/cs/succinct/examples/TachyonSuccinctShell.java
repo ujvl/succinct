@@ -15,7 +15,9 @@ import tachyon.client.file.options.InStreamOptions;
 import tachyon.conf.TachyonConf;
 import tachyon.exception.TachyonException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -46,9 +48,8 @@ public class TachyonSuccinctShell {
         TachyonFileSystem tfs = TachyonFileSystem.TachyonFileSystemFactory.get();
         TachyonFile file = tfs.open(inFileURI);
         ByteBuffer byteBuffer = readBytes(tfs, file, readOptions);
-        SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer();
-        succinctFileBuffer.readFromStream(new DataInputStream(new ByteArrayInputStream(byteBuffer.array())));
 
+        SuccinctFileBuffer succinctFileBuffer = new SuccinctFileBuffer(byteBuffer);
         activateShell(succinctFileBuffer);
 
     } catch (TachyonException|IOException e) {
@@ -71,10 +72,14 @@ public class TachyonSuccinctShell {
       FileInStream inStream = tfs.getInStream(file, readOps);
       ByteBuffer buf = ByteBuffer.allocate((int) inStream.remaining());
       inStream.read(buf.array());
-      buf.order(ByteOrder.nativeOrder());
+      buf.order(ByteOrder.BIG_ENDIAN);
       return buf;
   }
 
+  /**
+   * Sets up the tfs configuration
+   * @param masterURI master URI of tfs instance
+   */
   public static void setupTFS(String masterURI) {
     TachyonURI masterLoc = new TachyonURI(masterURI);
     TachyonConf tachyonConf = ClientContext.getConf();
