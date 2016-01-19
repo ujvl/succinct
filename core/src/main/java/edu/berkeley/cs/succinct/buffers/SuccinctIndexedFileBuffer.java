@@ -4,8 +4,8 @@ import edu.berkeley.cs.succinct.StorageMode;
 import edu.berkeley.cs.succinct.SuccinctCore;
 import edu.berkeley.cs.succinct.SuccinctIndexedFile;
 import edu.berkeley.cs.succinct.regex.RegExMatch;
-import edu.berkeley.cs.succinct.util.dictionary.Tables;
 import edu.berkeley.cs.succinct.regex.parser.RegExParsingException;
+import edu.berkeley.cs.succinct.util.SuccinctConstants;
 import edu.berkeley.cs.succinct.util.container.Range;
 import edu.berkeley.cs.succinct.util.iterator.SearchIterator;
 import edu.berkeley.cs.succinct.util.iterator.SearchRecordIterator;
@@ -20,26 +20,14 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
   protected transient int[] offsets;
 
   /**
-   * Constructor to initialize SuccinctIndexedBuffer from input byte array, offsets corresponding to records,
-   * context length and file offset.
-   *
-   * @param input         The input byte array.
-   * @param offsets       Offsets corresponding to records.
-   * @param contextLen    Context Length.
-   */
-  public SuccinctIndexedFileBuffer(byte[] input, int[] offsets, int contextLen) {
-    super(input, contextLen);
-    this.offsets = offsets;
-  }
-
-  /**
    * Constructor to initialize SuccinctIndexedBuffer from input byte array and offsets corresponding to records.
    *
    * @param input   The input byte array.
    * @param offsets Offsets corresponding to records.
    */
   public SuccinctIndexedFileBuffer(byte[] input, int[] offsets) {
-    this(input, offsets, 3);
+    super(input);
+    this.offsets = offsets;
   }
 
   /**
@@ -59,7 +47,6 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
    */
   public SuccinctIndexedFileBuffer(DataInputStream is) {
     try {
-      Tables.init();
       readFromStream(is);
     } catch (IOException e) {
       e.printStackTrace();
@@ -73,6 +60,11 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
    */
   public SuccinctIndexedFileBuffer(ByteBuffer buf) {
     super(buf);
+  }
+
+  @Override public int getSuccinctIndexedFileSize() {
+    return super.getSuccinctFileSize()
+      + (12 + offsets.length * SuccinctConstants.INT_SIZE_BYTES);
   }
 
   /**
@@ -175,7 +167,7 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
    * @return Offsets of all matching records.
    */
   @Override public Integer[] recordSearchIds(byte[] query) {
-    Set<Integer> results = new HashSet<Integer>();
+    Set<Integer> results = new HashSet<>();
     Range range = bwdSearch(query);
 
     long sp = range.first, ep = range.second;
@@ -215,7 +207,7 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
    */
   @Override public Integer[] recordSearchRegexIds(String query) throws RegExParsingException {
     Set<RegExMatch> regexOffsetResults = regexSearch(query);
-    Set<Integer> recordIds = new HashSet<Integer>();
+    Set<Integer> recordIds = new HashSet<>();
     for (RegExMatch m : regexOffsetResults) {
       int recordId = offsetToRecordId((int) m.getOffset());
       if (!recordIds.contains(recordId)) {
@@ -234,14 +226,14 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
    */
   @Override public Integer[] recordMultiSearchIds(QueryType[] queryTypes, byte[][][] queries) {
     assert (queryTypes.length == queries.length);
-    Set<Integer> recordIds = new HashSet<Integer>();
+    Set<Integer> recordIds = new HashSet<>();
 
     if (queries.length == 0) {
       throw new IllegalArgumentException("recordMultiSearchIds called with empty queries");
     }
 
     // Get all ranges
-    ArrayList<Range> ranges = new ArrayList<Range>();
+    ArrayList<Range> ranges = new ArrayList<>();
     for (int qid = 0; qid < queries.length; qid++) {
       Range range;
 
@@ -272,7 +264,7 @@ public class SuccinctIndexedFileBuffer extends SuccinctFileBuffer implements Suc
 
     // Populate the set of offsets corresponding to the first range
     Range firstRange = ranges.get(0);
-    Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+    Map<Integer, Integer> counts = new HashMap<>();
     {
       long sp = firstRange.first, ep = firstRange.second;
       for (long i = 0; i < ep - sp + 1; i++) {

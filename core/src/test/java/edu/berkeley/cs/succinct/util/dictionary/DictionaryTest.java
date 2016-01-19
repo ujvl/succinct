@@ -14,7 +14,6 @@ public class DictionaryTest extends TestCase {
    */
   public void setUp() throws Exception {
     super.setUp();
-    Tables.init();
   }
 
   /**
@@ -23,7 +22,6 @@ public class DictionaryTest extends TestCase {
    * @throws Exception
    */
   public void testGetRank1() throws Exception {
-    System.out.println("getRank1");
 
     BitMap B = new BitMap(2048);
     for (int i = 0; i < 2048; i++) {
@@ -43,7 +41,6 @@ public class DictionaryTest extends TestCase {
    * @throws Exception
    */
   public void testGetRank0() throws Exception {
-    System.out.println("getRank0");
 
     BitMap B = new BitMap(2048);
     for (int i = 0; i < 2048; i++) {
@@ -63,7 +60,6 @@ public class DictionaryTest extends TestCase {
    * @throws Exception
    */
   public void testGetByteBuffer() throws Exception {
-    System.out.println("getByteBuffer");
 
     BitMap B = new BitMap(2048);
     for (int i = 0; i < 2048; i++) {

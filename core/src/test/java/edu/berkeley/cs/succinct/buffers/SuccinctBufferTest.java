@@ -29,7 +29,7 @@ public class SuccinctBufferTest extends SuccinctCoreTest {
     byte[] fileData = new byte[(int) inputFile.length()];
     DataInputStream dis = new DataInputStream(new FileInputStream(inputFile));
     dis.readFully(fileData);
-    sCore = new SuccinctBuffer(fileData, 3);
+    sCore = new SuccinctBuffer(fileData);
 
   }
 
@@ -52,7 +52,6 @@ public class SuccinctBufferTest extends SuccinctCoreTest {
    * @throws Exception
    */
   public void testSerializeDeserialize() throws Exception {
-    System.out.println("serializeDeserialize");
 
     // Serialize data
     FileOutputStream fOut = new FileOutputStream(testFileSuccinct);
@@ -82,7 +81,6 @@ public class SuccinctBufferTest extends SuccinctCoreTest {
    * @throws Exception
    */
   public void testMemoryMap() throws Exception {
-    System.out.println("memoryMap");
 
     ((SuccinctBuffer) sCore).writeToFile(testFileSuccinctMin);
     SuccinctBuffer sCoreRead = new SuccinctBuffer(testFileSuccinctMin, StorageMode.MEMORY_MAPPED);
@@ -103,7 +101,6 @@ public class SuccinctBufferTest extends SuccinctCoreTest {
    * @throws Exception
    */
   public void testReadFromFile() throws Exception {
-    System.out.println("readFromFile");
 
     ((SuccinctBuffer) sCore).writeToFile(testFileSuccinctMin);
     SuccinctBuffer sCoreRead = new SuccinctBuffer(testFileSuccinctMin, StorageMode.MEMORY_MAPPED);

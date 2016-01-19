@@ -4,6 +4,7 @@ import edu.berkeley.cs.succinct.SuccinctCore;
 import edu.berkeley.cs.succinct.SuccinctIndexedFile;
 import edu.berkeley.cs.succinct.regex.RegExMatch;
 import edu.berkeley.cs.succinct.regex.parser.RegExParsingException;
+import edu.berkeley.cs.succinct.util.SuccinctConstants;
 import edu.berkeley.cs.succinct.util.container.Range;
 import edu.berkeley.cs.succinct.util.iterator.SearchIterator;
 import edu.berkeley.cs.succinct.util.iterator.SearchRecordIterator;
@@ -48,6 +49,11 @@ public class SuccinctIndexedFileStream extends SuccinctFileStream implements Suc
    */
   public SuccinctIndexedFileStream(Path filePath) throws IOException {
     this(filePath, new Configuration());
+  }
+
+  @Override public int getSuccinctIndexedFileSize() {
+    return super.getSuccinctFileSize()
+      + (12 + offsets.length * SuccinctConstants.INT_SIZE_BYTES);
   }
 
   public int offsetToRecordId(int pos) {
@@ -121,7 +127,7 @@ public class SuccinctIndexedFileStream extends SuccinctFileStream implements Suc
   }
 
   public Integer[] recordSearchIds(byte[] query) {
-    Set<Integer> results = new HashSet<Integer>();
+    Set<Integer> results = new HashSet<>();
     Range range = bwdSearch(query);
 
     long sp = range.first, ep = range.second;
@@ -161,7 +167,7 @@ public class SuccinctIndexedFileStream extends SuccinctFileStream implements Suc
    */
   @Override public Integer[] recordSearchRegexIds(String query) throws RegExParsingException {
     Set<RegExMatch> regexOffsetResults = regexSearch(query);
-    Set<Integer> recordIds = new HashSet<Integer>();
+    Set<Integer> recordIds = new HashSet<>();
     for (RegExMatch m : regexOffsetResults) {
       int recordId = offsetToRecordId((int) m.getOffset());
       if (!recordIds.contains(recordId)) {
@@ -173,14 +179,14 @@ public class SuccinctIndexedFileStream extends SuccinctFileStream implements Suc
 
   @Override public Integer[] recordMultiSearchIds(QueryType[] queryTypes, byte[][][] queries) {
     assert (queryTypes.length == queries.length);
-    Set<Integer> recordIds = new HashSet<Integer>();
+    Set<Integer> recordIds = new HashSet<>();
 
     if (queries.length == 0) {
       throw new IllegalArgumentException("recordMultiSearchIds called with empty queries");
     }
 
     // Get all ranges
-    ArrayList<Range> ranges = new ArrayList<Range>();
+    ArrayList<Range> ranges = new ArrayList<>();
     for (int qid = 0; qid < queries.length; qid++) {
       Range range;
 
@@ -211,7 +217,7 @@ public class SuccinctIndexedFileStream extends SuccinctFileStream implements Suc
 
     // Populate the set of recordIds corresponding to the first range
     Range firstRange = ranges.get(0);
-    Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+    Map<Integer, Integer> counts = new HashMap<>();
     {
       long sp = firstRange.first, ep = firstRange.second;
       for (long i = 0; i < ep - sp + 1; i++) {
